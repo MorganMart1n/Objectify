@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Image,
@@ -10,6 +10,7 @@ import {
   FlatList,
   Platform,
   Linking,
+  Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
@@ -23,6 +24,10 @@ export default function HomeScreen() {
   const [responseText, setResponseText] = useState("");
   const [songs, setSongs] = useState([]);
   const [spotifyData, setSpotifyData] = useState([]);
+
+  // Animation values
+  const logoSize = useRef(new Animated.Value(200)).current; // Initial size
+  const logoMarginTop = useRef(new Animated.Value(20)).current; // Initial marginTop
 
   // Load the CSV file on component mount
   useEffect(() => {
@@ -71,9 +76,27 @@ export default function HomeScreen() {
     }
   };
 
+  // Shrink logo animation
+  const shrinkLogo = () => {
+    Animated.parallel([
+      Animated.timing(logoSize, {
+        toValue: 100, // Shrink to 100x100
+        duration: 500, // Animation duration
+        useNativeDriver: false,
+      }),
+      Animated.timing(logoMarginTop, {
+        toValue: 10, // Move closer to the top
+        duration: 500, // Animation duration
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
   // Open camera to take a photo
   const takePhoto = async () => {
     setLoading(true);
+    shrinkLogo(); // Shrink the logo
+
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
@@ -92,6 +115,8 @@ export default function HomeScreen() {
   // Open gallery to pick an image
   const pickImage = async () => {
     setLoading(true);
+    shrinkLogo(); // Shrink the logo
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -197,6 +222,20 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Logo Image */}
+      <Animated.Image
+        source={require("../../assets/images/Logo.png")} // Replace
+        style={[
+          styles.logo,
+          {
+            width: logoSize,
+            height: logoSize,
+            marginTop: logoMarginTop,
+          },
+        ]}
+      />
+
+      {/* Buttons */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.customButton} // Custom button style
@@ -217,36 +256,46 @@ export default function HomeScreen() {
       {image && <Image source={{ uri: image }} style={styles.image} />}
 
       {/* Inline Results Container */}
-      <View style={styles.resultsContainer}>
+      <View style={styles.inlineResultsContainer}>
         {/* Word Results */}
-        {responseText && (
-          <View style={styles.responseContainer}>
-            <Text style={styles.responseText}>{responseText}</Text>
-          </View>
-        )}
-
-        {/* Spotify Results */}
-        {songs.length > 0 && (
-          <FlatList
-            data={songs}
-            keyExtractor={(item) => item.track_id}
-            renderItem={({ item }) => (
-              <View style={styles.songItem}>
-                <Text
-                  style={styles.songName}
-                  onPress={() =>
-                    Linking.openURL(
-                      `https://open.spotify.com/track/${item.track_id}`
-                    )
-                  }
-                >
-                  {item.track_name}
-                </Text>
-                <Text style={styles.artist}>{item.artists}</Text>
+        <View style={styles.wordResultsWrapper}>
+          <ScrollView
+            style={styles.wordResultsContainer}
+            contentContainerStyle={styles.wordResultsContentContainer}
+          >
+            {responseText && (
+              <View style={styles.responseContainer}>
+                <Text style={styles.responseText}>{responseText}</Text>
               </View>
             )}
-          />
-        )}
+          </ScrollView>
+        </View>
+
+        {/* Spotify Results */}
+        <View style={styles.spotifyResultsWrapper}>
+          {songs.length > 0 && (
+            <FlatList
+              style={styles.spotifyResultsContainer}
+              data={songs}
+              keyExtractor={(item) => item.track_id}
+              renderItem={({ item }) => (
+                <View style={styles.songItem}>
+                  <Text
+                    style={styles.songName}
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://open.spotify.com/track/${item.track_id}`
+                      )
+                    }
+                  >
+                    {item.track_name}
+                  </Text>
+                  <Text style={styles.artist}>{item.artists}</Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
       </View>
     </View>
   );
@@ -260,6 +309,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: 20,
   },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -267,14 +321,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   customButton: {
-    backgroundColor: '#50C878', // Green background color
+    backgroundColor: '#50C878',
     padding: 10,
-    borderRadius: 20, // Rounded corners
-    width: '25%', // Adjust width as needed
+    borderRadius: 20,
+    width: '25%',
     alignItems: 'center',
   },
   buttonText: {
-    color: '#1F262A', // Dark text color
+    color: '#1F262A',
     fontSize: 15,
   },
   image: {
@@ -282,22 +336,41 @@ const styles = StyleSheet.create({
     height: 150,
     marginBottom: 20,
   },
-  resultsContainer: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between',
+  inlineResultsContainer: {
+    flexDirection: 'row', // Display children inline
     width: '90%',
-    marginTop: 20,
-    
+    justifyContent: 'space-between', // Add space between Word Results and Spotify Results
+    alignItems: 'flex-start', // Align items to the top
+  },
+  wordResultsWrapper: {
+    width: '45%', // Fixed width for Word Results
+    maxHeight: 300, // Limit height for ScrollView
+    backgroundColor: '#3A3F3F', // Background color for the box
+    borderRadius: 10, // Rounded corners
+    padding: 10, // Inner padding
+  },
+  wordResultsContainer: {
+    flex: 1, // Take up available space
+  },
+  wordResultsContentContainer: {
+    flexGrow: 1, // Allow content to grow within ScrollView
   },
   responseContainer: {
-    width: '45%',
-    backgroundColor: '#3A3F3F',
-    borderRadius: 10,
-    padding: 10,
+    flex: 1,
   },
   responseText: {
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  spotifyResultsWrapper: {
+    width: '45%', // Fixed width for Spotify Results
+    maxHeight: 300, // Limit height for FlatList
+    backgroundColor: '#3A3F3F', // Background color for the box
+    borderRadius: 10, // Rounded corners
+    padding: 10, // Inner padding
+  },
+  spotifyResultsContainer: {
+    flex: 1, // Take up available space
   },
   songItem: {
     padding: 10,
@@ -307,6 +380,7 @@ const styles = StyleSheet.create({
   songName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#FFFFFF', // Ensure text is visible
   },
   artist: {
     fontSize: 14,
