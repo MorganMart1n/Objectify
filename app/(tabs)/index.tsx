@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Button,
   Image,
   StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   ActivityIndicator,
   Text,
   FlatList,
@@ -197,41 +198,56 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.buttonContainer}>
-        <Button title="Take Photo" onPress={takePhoto} />
-        <Button title="Pick from Gallery" onPress={pickImage} />
+        <TouchableOpacity
+          style={styles.customButton} // Custom button style
+          onPress={takePhoto}
+        >
+          <Text style={styles.buttonText}>Take Photo</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.customButton} // Custom button style
+          onPress={pickImage}
+        >
+          <Text style={styles.buttonText}>Pick from Gallery</Text>
+        </TouchableOpacity>
       </View>
 
       {loading && <ActivityIndicator size="large" color="#0000ff" />}
 
       {image && <Image source={{ uri: image }} style={styles.image} />}
 
-      {responseText && (
-        <View style={styles.responseContainer}>
-          <Text style={styles.responseText}>{responseText}</Text>
-        </View>
-      )}
+      {/* Inline Results Container */}
+      <View style={styles.resultsContainer}>
+        {/* Word Results */}
+        {responseText && (
+          <View style={styles.responseContainer}>
+            <Text style={styles.responseText}>{responseText}</Text>
+          </View>
+        )}
 
-      {songs.length > 0 && (
-        <FlatList
-          data={songs}
-          keyExtractor={(item) => item.track_id}
-          renderItem={({ item }) => (
-            <View style={styles.songItem}>
-              <Text
-                style={styles.songName}
-                onPress={() =>
-                  Linking.openURL(
-                    `https://open.spotify.com/track/${item.track_id}`
-                  )
-                }
-              >
-                {item.track_name}
-              </Text>
-              <Text style={styles.artist}>{item.artists}</Text>
-            </View>
-          )}
-        />
-      )}
+        {/* Spotify Results */}
+        {songs.length > 0 && (
+          <FlatList
+            data={songs}
+            keyExtractor={(item) => item.track_id}
+            renderItem={({ item }) => (
+              <View style={styles.songItem}>
+                <Text
+                  style={styles.songName}
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://open.spotify.com/track/${item.track_id}`
+                    )
+                  }
+                >
+                  {item.track_name}
+                </Text>
+                <Text style={styles.artist}>{item.artists}</Text>
+              </View>
+            )}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -239,46 +255,61 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#272D2D',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 20,
   },
   buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "80%",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
     marginBottom: 20,
+  },
+  customButton: {
+    backgroundColor: '#50C878', // Green background color
+    padding: 10,
+    borderRadius: 20, // Rounded corners
+    width: '25%', // Adjust width as needed
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#1F262A', // Dark text color
+    fontSize: 15,
   },
   image: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     marginBottom: 20,
   },
+  resultsContainer: {
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    width: '90%',
+    marginTop: 20,
+    
+  },
   responseContainer: {
-    padding: 20,
-    backgroundColor: "#f0f0f0",
+    width: '45%',
+    backgroundColor: '#3A3F3F',
     borderRadius: 10,
-    width: "80%",
+    padding: 10,
   },
   responseText: {
     fontSize: 16,
-    color: "#333",
+    color: '#FFFFFF',
   },
   songItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: '#ccc',
   },
   songName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   artist: {
     fontSize: 14,
-    color: "#666",
-  },
-  songUrl: {
-    fontSize: 12,
-    color: "#888",
+    color: '#666',
   },
 });
