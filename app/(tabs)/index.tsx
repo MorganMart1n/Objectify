@@ -37,13 +37,13 @@ export default function HomeScreen() {
 
         if (Platform.OS === "web") {
           // For web platform, use fetch to load the CSV file
-          const response = await fetch("/assets/cleaned2.csv");
+          const response = await fetch("/assets/with_regions.csv");
           csvData = await response.text();
         } else {
           // For mobile platforms, use expo-file-system
-          const csvUri = FileSystem.documentDirectory + "cleaned2.csv";
+          const csvUri = FileSystem.documentDirectory + "with_regions.csv";
           await FileSystem.copyAsync({
-            from: `${FileSystem.bundleDirectory}assets/cleaned2.csv`,
+            from: `${FileSystem.bundleDirectory}assets/with_regions.csv`,
             to: csvUri,
           });
           csvData = await FileSystem.readAsStringAsync(csvUri);
@@ -203,16 +203,16 @@ export default function HomeScreen() {
       const songValence = parseFloat(song.valence);
       const songSpeechiness = parseFloat(song.speechiness);
       const songAcousticness = parseFloat(song.acousticness);
-      // const songRegion = song.Continent?.trim();
+      const songRegion = song.region?.trim();
 
       return (
-        Math.abs(songDanceability - danceability) <= 0.1 &&
-        Math.abs(songEnergy - energy) <= 0.1 &&
-        Math.abs(songValence - valence) <= 0.1 &&
-        Math.abs(songLoudness - loudness) <= 0.1
+        Math.abs(songDanceability - danceability) <= 0.15 &&
+        Math.abs(songEnergy - energy) <= 0.15 &&
+        Math.abs(songValence - valence) <= 0.15 &&
+        Math.abs(songLoudness - loudness) <= 0.15 &&
         // Math.abs(songSpeechiness - speechiness) <= 0.2 &&
         // Math.abs(songAcousticness - acousticness) <= 0.2 &&
-        // (!region || songRegion === region)
+        (!region || songRegion === region)
       );
     });
 
@@ -304,9 +304,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#272D2D',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    backgroundColor: "#272D2D",
+    alignItems: "center",
+    justifyContent: "flex-start",
     paddingTop: 20,
   },
   logo: {
@@ -315,20 +315,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
     marginBottom: 20,
   },
   customButton: {
-    backgroundColor: '#50C878',
+    backgroundColor: "#50C878",
     padding: 10,
     borderRadius: 20,
-    width: '25%',
-    alignItems: 'center',
+    width: "25%",
+    alignItems: "center",
   },
   buttonText: {
-    color: '#1F262A',
+    color: "#1F262A",
     fontSize: 15,
   },
   image: {
@@ -337,15 +337,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inlineResultsContainer: {
-    flexDirection: 'row', // Display children inline
-    width: '90%',
-    justifyContent: 'space-between', // Add space between Word Results and Spotify Results
-    alignItems: 'flex-start', // Align items to the top
+    flexDirection: "row", // Display children inline
+    width: "90%",
+    justifyContent: "space-between", // Add space between Word Results and Spotify Results
+    alignItems: "flex-start", // Align items to the top
   },
   wordResultsWrapper: {
-    width: '45%', // Fixed width for Word Results
+    width: "45%", // Fixed width for Word Results
     maxHeight: 300, // Limit height for ScrollView
-    backgroundColor: '#3A3F3F', // Background color for the box
+    backgroundColor: "#3A3F3F", // Background color for the box
     borderRadius: 10, // Rounded corners
     padding: 10, // Inner padding
   },
@@ -360,12 +360,12 @@ const styles = StyleSheet.create({
   },
   responseText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   spotifyResultsWrapper: {
-    width: '45%', // Fixed width for Spotify Results
+    width: "45%", // Fixed width for Spotify Results
     maxHeight: 300, // Limit height for FlatList
-    backgroundColor: '#3A3F3F', // Background color for the box
+    backgroundColor: "#3A3F3F", // Background color for the box
     borderRadius: 10, // Rounded corners
     padding: 10, // Inner padding
   },
@@ -375,15 +375,15 @@ const styles = StyleSheet.create({
   songItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: "#ccc",
   },
   songName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF', // Ensure text is visible
+    fontWeight: "bold",
+    color: "#FFFFFF", // Ensure text is visible
   },
   artist: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
 });
