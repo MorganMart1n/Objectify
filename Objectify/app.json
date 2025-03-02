@@ -8,6 +8,10 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "packagerOpts": {
+      "assetExts": ["csv"]
+    },
     "ios": {
       "supportsTablet": true
     },

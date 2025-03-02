@@ -1,19 +1,71 @@
-import React, { useState } from 'react';
-import { View, Button, Image, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Button,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  FlatList,
+  Platform,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
+import * as FileSystem from "expo-file-system";
+import RNFS from "react-native-fs"; // For web platform
+import Papa from "papaparse"; // For parsing CSV
 
 export default function HomeScreen() {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [responseText, setResponseText] = useState('');
+  const [responseText, setResponseText] = useState("");
+  const [songs, setSongs] = useState([]);
+  const [spotifyData, setSpotifyData] = useState([]);
+
+  // Load the CSV file on component mount
+  useEffect(() => {
+    const loadCSV = async () => {
+      try {
+        let csvData;
+
+        if (Platform.OS === "web") {
+          // For web platform, use fetch to load the CSV file
+          const response = await fetch("/assets/clean_spotify.csv");
+          csvData = await response.text();
+        } else {
+          // For mobile platforms, use expo-file-system
+          const csvUri = FileSystem.documentDirectory + "clean_spotify.csv";
+          await FileSystem.copyAsync({
+            from: `${FileSystem.bundleDirectory}assets/clean_spotify.csv`,
+            to: csvUri,
+          });
+          csvData = await FileSystem.readAsStringAsync(csvUri);
+        }
+
+        // Parse CSV with delimiter ;
+        const parsedData = Papa.parse(csvData, {
+          header: true,
+          delimiter: ",", // Specify the delimiter
+        }).data;
+
+        console.log("Parsed CSV Data:", parsedData); // Debug parsed data
+        setSpotifyData(parsedData);
+      } catch (error) {
+        console.error("Error loading CSV:", error);
+      }
+    };
+
+    loadCSV();
+  }, []);
 
   // Request camera and gallery permissions
   const requestPermissions = async () => {
-    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-    const { status: galleryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (cameraStatus !== 'granted' || galleryStatus !== 'granted') {
-      alert('Sorry, we need camera and gallery permissions to make this work!');
+    const { status: cameraStatus } =
+      await ImagePicker.requestCameraPermissionsAsync();
+    const { status: galleryStatus } =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (cameraStatus !== "granted" || galleryStatus !== "granted") {
+      alert("Sorry, we need camera and gallery permissions to make this work!");
     }
   };
 
@@ -57,7 +109,7 @@ export default function HomeScreen() {
   // Send image to Gemini API for analysis
   const analyzeImage = async (base64Image) => {
     try {
-      const apiKey = 'AIzaSyAriFoIsdDSvBAS6Zsh_B8zmdgAePdZUlU'; // Replace with your API key
+      const apiKey = "AIzaSyAriFoIsdDSvBAS6Zsh_B8zmdgAePdZUlU"; // Replace with your API key
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await axios.post(url, {
@@ -69,7 +121,6 @@ export default function HomeScreen() {
                        For each characteristic answer in one word on new line to later use as features. Do not include feature names in answer, just values you produce. \
                        Name object category; \
                        Potential material(s); \
-                       cultural region (Latin-America, Asia, Anglo-America, Europe, Africa or Oceania); \
                        religious/belief significance if has any, if none then leave as None; \
                        main colour; \
                        three main moods it gives (each on new line); \
@@ -81,11 +132,13 @@ export default function HomeScreen() {
                        Loudness between -60 and 0 (Lower value, quieter is is); \
                        Speechiness between 0.022 and 0.966; \
                        Acousticness between 0 and 0.994; \
-                       Valence between 0.26 and 0.982",
+                       Valence between 0.26 and 0.982; \
+                       Region (Latin-America, Asia, Anglo-America, Europe, Africa or Oceania); \
+                       Dont have any whitespace lines and dont include names for song features, only values",
               },
               {
                 inlineData: {
-                  mimeType: 'image/jpeg',
+                  mimeType: "image/jpeg",
                   data: base64Image,
                 },
               },
@@ -94,13 +147,50 @@ export default function HomeScreen() {
         ],
       });
 
-      setResponseText(response.data.candidates[0].content.parts[0].text);
+      const responseText = response.data.candidates[0].content.parts[0].text;
+      setResponseText(responseText);
+      filterSongs(responseText);
     } catch (error) {
-      console.error('Error analyzing image:', error);
-      setResponseText('Failed to analyze image. Please try again.');
+      console.error("Error analyzing image:", error);
+      setResponseText("Failed to analyze image. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter songs based on Gemini response
+  const filterSongs = (responseText) => {
+    const lines = responseText.split("\n");
+    const danceability = parseFloat(lines[lines.length - 7]) || 0.5; // Adjust indices based on response
+    const energy = parseFloat(lines[lines.length - 6]) || 0.5;
+    const loudness = parseFloat(lines[lines.length - 5]) || 0.5;
+    const speechiness = parseFloat(lines[lines.length - 4]) || 0.5;
+    const acousticness = parseFloat(lines[lines.length - 3]) || 0.5;
+    const valence = parseFloat(lines[lines.length - 2]) || 0.5;
+    const region = lines[lines.length - 1]?.trim();
+
+    const filteredSongs = spotifyData.filter((song) => {
+      const songDanceability = parseFloat(song.Danceability);
+      const songEnergy = parseFloat(song.Energy);
+      const songLoudness = parseFloat(song.Loudness);
+      const songValence = parseFloat(song.Valence);
+      const songSpeechiness = parseFloat(song.Speechiness);
+      const songAcousticness = parseFloat(song.Acousticness);
+      const songRegion = song.Continent?.trim();
+
+      return (
+        Math.abs(songDanceability - danceability) <= 0.15 &&
+        Math.abs(songEnergy - energy) <= 0.15 &&
+        Math.abs(songValence - valence) <= 0.15 &&
+        Math.abs(songLoudness - loudness) <= 0.15 &&
+        // Math.abs(songSpeechiness - speechiness) <= 0.2 &&
+        // Math.abs(songAcousticness - acousticness) <= 0.2 &&
+        (!region || songRegion === region)
+      );
+    });
+
+    console.log("Filtered Songs:", filteredSongs); // Debug filtered songs
+    setSongs(filteredSongs.slice(0, 5)); // Get first 5 songs
   };
 
   return (
@@ -119,6 +209,20 @@ export default function HomeScreen() {
           <Text style={styles.responseText}>{responseText}</Text>
         </View>
       )}
+
+      {songs.length > 0 && (
+        <FlatList
+          data={songs}
+          keyExtractor={(item) => item["Song URL"]}
+          renderItem={({ item }) => (
+            <View style={styles.songItem}>
+              <Text style={styles.songName}>{item.Title}</Text>
+              <Text style={styles.artist}>{item.Artists}</Text>
+              <Text style={styles.songUrl}>{item["Song URL"]}</Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -126,14 +230,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '80%',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "80%",
     marginBottom: 20,
   },
   image: {
@@ -143,12 +247,29 @@ const styles = StyleSheet.create({
   },
   responseContainer: {
     padding: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderRadius: 10,
-    width: '80%',
+    width: "80%",
   },
   responseText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
+  },
+  songItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  songName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  artist: {
+    fontSize: 14,
+    color: "#666",
+  },
+  songUrl: {
+    fontSize: 12,
+    color: "#888",
   },
 });
