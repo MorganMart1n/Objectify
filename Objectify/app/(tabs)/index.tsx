@@ -1,74 +1,154 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useState } from 'react';
+import { View, Button, Image, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
 
 export default function HomeScreen() {
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [responseText, setResponseText] = useState('');
+
+  // Request camera and gallery permissions
+  const requestPermissions = async () => {
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status: galleryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (cameraStatus !== 'granted' || galleryStatus !== 'granted') {
+      alert('Sorry, we need camera and gallery permissions to make this work!');
+    }
+  };
+
+  // Open camera to take a photo
+  const takePhoto = async () => {
+    setLoading(true);
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+      base64: true, // Get image as base64
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+      analyzeImage(result.assets[0].base64);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  // Open gallery to pick an image
+  const pickImage = async () => {
+    setLoading(true);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+      base64: true, // Get image as base64
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+      analyzeImage(result.assets[0].base64);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  // Send image to Gemini API for analysis
+  const analyzeImage = async (base64Image) => {
+    try {
+      const apiKey = 'AIzaSyAriFoIsdDSvBAS6Zsh_B8zmdgAePdZUlU'; // Replace with your API key
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+      const response = await axios.post(url, {
+        contents: [
+          {
+            parts: [
+              {
+                text: "Analyze the given image and identify the closest object within the scene. \
+                       For each characteristic answer in one word on new line to later use as features. Do not include feature names in answer, just values you produce. \
+                       Name object category; \
+                       Potential material(s); \
+                       cultural region (Latin-America, Asia, Anglo-America, Europe, Africa or Oceania); \
+                       religious/belief significance if has any, if none then leave as None; \
+                       main colour; \
+                       three main moods it gives (each on new line); \
+                       Historical or symbolic context (e.g., ancient, modern, ceremonial, etc.); \
+                       Associated sound or auditory quality (e.g., chime, drum, silence, etc.) \
+                       Based on the characterstics that you produce, you need to map them to these Spotify songs feature values: \
+                       Danceability between 0.073 and 0.985; \
+                       Energy between 0.005 and 0.996; \
+                       Loudness between -60 and 0 (Lower value, quieter is is); \
+                       Speechiness between 0.022 and 0.966; \
+                       Acousticness between 0 and 0.994; \
+                       Valence between 0.26 and 0.982",
+              },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      setResponseText(response.data.candidates[0].content.parts[0].text);
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      setResponseText('Failed to analyze image. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View style={styles.buttonContainer}>
+        <Button title="Take Photo" onPress={takePhoto} />
+        <Button title="Pick from Gallery" onPress={pickImage} />
+      </View>
+
+      {loading && <ActivityIndicator size="large" color="#0000ff" />}
+
+      {image && <Image source={{ uri: image }} style={styles.image} />}
+
+      {responseText && (
+        <View style={styles.responseContainer}>
+          <Text style={styles.responseText}>{responseText}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '80%',
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  image: {
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+  },
+  responseContainer: {
+    padding: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    width: '80%',
+  },
+  responseText: {
+    fontSize: 16,
+    color: '#333',
   },
 });
