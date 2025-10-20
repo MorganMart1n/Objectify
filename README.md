@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+<p align="center">
+  <img src="https://github.com/MorganMart1n/Objectify/blob/main/assets/images/Logo.png?raw=true" alt="Objectify Logo" width="250"/>
+</p>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Objectify
 
-## Get started
 
-1. Install dependencies
 
-   ```bash
-   npm install
-   ```
+**AI-Powered Visual Analysis Meets Music Discovery**
 
-2. Start the app
+Objectify is an **AI-driven image analysis system** that connects visual understanding with music recommendation.  
+It leverages **Google’s Gemini model** to extract detailed semantic and emotional attributes from an image, and correlates them with **Spotify’s music data** to generate a curated list of **10 tracks** that capture the mood, tone, and aesthetic of the visual content.
 
-   ```bash
-    npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## How It Works
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. **Image Input**  
+   Users upload or provide an image to Objectify.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+2. **AI Image Interpretation**  
+   The system uses **Gemini’s inference capabilities** to analyze the image, identifying key attributes such as color palette, emotional tone, objects, and composition.
 
-## Get a fresh project
+3. **Music Correlation**  
+   Extracted attributes are mapped to **Spotify track metadata** (including mood, energy level, genre, and tempo), allowing the system to intelligently generate a set of **10 musically aligned recommendations**.
 
-When you're ready, run:
+4. **Output**  
+   The user receives:
+   - A structured summary of the image’s defining attributes  
+   - A dynamically generated Spotify playlist or track list reflecting the image’s mood  
 
-```bash
-npm run reset-project
-```
+---
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Tech Stack
 
-## Learn more
+- **Google Gemini API** — image interpretation and attribute extraction  
+- **Spotify API** — music data, audio features, and playlist generation  
+- **JavaScript / Node.js** — backend and data processing  
+- **HTML / CSS** — responsive frontend interface  
+- **RESTful API Integration** — seamless communication between AI and music services  
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Key Features
 
-## Join the community
+- **AI-powered image analysis** — extracts emotional and descriptive attributes  
+- **Intelligent song mapping** — aligns visual features with musical mood  
+- **Real-time results** — generates Spotify recommendations instantly  
+- **Minimalist design** — simple interface focused on creativity  
+- **Cross-API orchestration** — integrates Gemini and Spotify seamlessly  
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 👥 Team & Contributions
+
+- **Morgan Martin** — Lead Designer, Data Integration, and AI Development Support  
+  - Designed the overall user interface and experience  
+  - Implemented data integration pipelines between Gemini and Spotify APIs  
+  - Contributed to AI prompt engineering and system logic  
+  - Worked on backend API communication and inference tuning
+    
+- **Gleb Orlov** — AI Development and API Integration  
+  - Developed and optimized Gemini-based image analysis  
+  - Implemented the AI-to-Spotify correlation layer  
+
+---
